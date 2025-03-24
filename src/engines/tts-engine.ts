@@ -4,8 +4,8 @@ import { phonemize } from "../libs/transformers/utils/phonemize";
 import { getVoiceData, VOICES } from "../libs/transformers/utils/voices";
 
 
-var STYLE_DIM = 256;
-var SAMPLE_RATE = 24000;
+const STYLE_DIM = 256;
+const SAMPLE_RATE = 24000;
 
 export class TTSEngine {
   private model: StyleTextToSpeech2Model | null = null;
@@ -39,7 +39,7 @@ export class TTSEngine {
       throw new Error('TTS model not initialized');
     }
 
-    var { voice = "af", speed = 1 } = options;
+    const { voice = "af", speed = 1 } = options;
 
     if (!VOICES.hasOwnProperty(voice)) {
       console.error(`Voice "${voice}" not found. Available voices:`);
@@ -48,28 +48,28 @@ export class TTSEngine {
     }
 
     try {
-      var language = (voice.at(0)); // "a" or "b"
-      var phonemes = await phonemize(text, language);
+      const language = (voice.at(0)); // "a" or "b"
+      const phonemes = await phonemize(text, language);
       // console.log('Phonemes:', phonemes); // Debug log
 
-      var { input_ids } = this.tokenizer(phonemes, {
+      const { input_ids } = this.tokenizer(phonemes, {
         truncation: true,
       });
 
       // Select voice style based on number of input tokens
-      var num_tokens = Math.min(Math.max(
+      const num_tokens = Math.min(Math.max(
         input_ids.dims.at(-1) - 2, // Without padding
         0,
       ), 509);
 
       // Load voice style
-      var data = await getVoiceData(voice);
-      var offset = num_tokens * STYLE_DIM;
-      var voiceData = data.slice(offset, offset + STYLE_DIM);
+      const data = await getVoiceData(voice);
+      const offset = num_tokens * STYLE_DIM;
+      const voiceData = data.slice(offset, offset + STYLE_DIM);
     //   console.log('Voice data length:', voiceData.length); // Debug log
 
       // Prepare model inputs
-      var inputs = {
+      const inputs = {
         input_ids: input_ids,
         style: new Tensor("float32", voiceData, [1, STYLE_DIM]),
         speed: new Tensor("float32", [speed], [1]),
@@ -77,7 +77,7 @@ export class TTSEngine {
     //   console.log('Model inputs prepared'); // Debug log
 
       // Generate audio
-      var output = await this.model._call(inputs);
+      const output = await this.model._call(inputs);
     //   console.log('Raw audio received:', output);
       
       if (!output || !output.waveform) {
@@ -85,15 +85,15 @@ export class TTSEngine {
       }
       
       // Convert Tensor to Float32Array and normalize the audio data
-      var audioData = new Float32Array(output.waveform.data);
+      const audioData = new Float32Array(output.waveform.data);
       
       if (audioData.length === 0) {
         throw new Error('Generated audio data is empty');
       }
 
       // Normalize audio data using a more efficient approach
-      var maxValue = audioData.reduce((max, val) => Math.max(max, Math.abs(val)), 0);
-      var normalizedData = maxValue > 0 ? 
+      const maxValue = audioData.reduce((max, val) => Math.max(max, Math.abs(val)), 0);
+      const normalizedData = maxValue > 0 ? 
         new Float32Array(audioData.length) : 
         audioData;
       
@@ -104,22 +104,22 @@ export class TTSEngine {
       }
 
       // Convert Float32Array to Int16Array for WAV format more efficiently
-      var int16Array = new Int16Array(normalizedData.length);
-      var int16Factor = 0x7FFF;
+      const int16Array = new Int16Array(normalizedData.length);
+      const int16Factor = 0x7FFF;
       for (let i = 0; i < normalizedData.length; i++) {
-        var s = normalizedData[i];
+        const s = normalizedData[i];
         int16Array[i] = s < 0 ? Math.max(-0x8000, s * 0x8000) : Math.min(0x7FFF, s * int16Factor);
       }
 
       // Create WAV header
-      var wavHeader = createWAVHeader({
+      const wavHeader = createWAVHeader({
         numChannels: 1,
         sampleRate: SAMPLE_RATE,
         numSamples: int16Array.length
       });
 
       // Combine header with audio data
-      var wavBytes = new Uint8Array(44 + int16Array.byteLength);
+      const wavBytes = new Uint8Array(44 + int16Array.byteLength);
       wavBytes.set(new Uint8Array(wavHeader), 0);
       wavBytes.set(new Uint8Array(int16Array.buffer), 44);
 
@@ -140,8 +140,8 @@ function createWAVHeader({ numChannels, sampleRate, numSamples }: {
   sampleRate: number, 
   numSamples: number 
 }): ArrayBuffer {
-  var buffer = new ArrayBuffer(44);
-  var view = new DataView(buffer);
+  const buffer = new ArrayBuffer(44);
+  const view = new DataView(buffer);
 
   // "RIFF" chunk descriptor
   writeString(view, 0, 'RIFF');
